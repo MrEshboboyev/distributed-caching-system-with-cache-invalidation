@@ -21,15 +21,16 @@ public class ApplicationServiceInstaller : IServiceInstaller
             cfg.RegisterServicesFromAssembly(AssemblyReference.Assembly);
         });
 
-        
-        // Add pipeline behaviors (order matters!)
 
-        // Add validation behavior to the pipeline
+        // Add caching behavior FIRST to check cache before executing request
+        services.AddScoped(typeof(IPipelineBehavior<,>), typeof(CachePipelineBehavior<,>));
+
+        // Add validation behavior NEXT to validate input data
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationPipelineBehavior<,>));
 
-        // Add logging behavior to the pipeline
+        // Add logging behavior LAST to log execution
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingPipelineBehavior<,>));
-
+        
         // Add FluentValidation validators from the specified assembly
         services.AddValidatorsFromAssembly(
             AssemblyReference.Assembly,

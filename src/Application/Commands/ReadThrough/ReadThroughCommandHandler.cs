@@ -2,7 +2,6 @@ using Application.Abstractions.Messaging;
 using Domain.Interfaces;
 using Domain.Shared;
 using Domain.ValueObjects;
-using MediatR;
 
 namespace Application.Commands.ReadThrough;
 

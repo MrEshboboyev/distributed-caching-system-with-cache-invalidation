@@ -1,13 +1,15 @@
+using System.Text.Json;
 using Application.Abstractions.Messaging;
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Interfaces;
 using Domain.Shared;
-using MediatR;
+using Domain.ValueObjects;
 
 namespace Application.Products.Queries.GetProduct;
 
 internal sealed class GetProductQueryHandler(
+    ICacheStrategy cacheStrategy,
     IProductRepository productRepository
 ) : IQueryHandler<GetProductQuery, Product>
 {
@@ -15,10 +17,25 @@ internal sealed class GetProductQueryHandler(
         GetProductQuery request,
         CancellationToken cancellationToken)
     {
-        var product = await productRepository.GetByIdAsync(request.Id, cancellationToken);
-        return product is null 
-            ? Result.Failure<Product>(
-                DomainErrors.Product.NotFound(request.Id)) 
-            : Result.Success(product);
+        var cacheKey = CacheKey.Create($"products:{request.Id}").Value;
+
+        var productResult = await cacheStrategy.ReadThroughAsync(
+            cacheKey,
+            async () =>
+            {
+                var product = await productRepository.GetByIdAsync(request.Id, cancellationToken);
+                return product is null
+                    ? Result.Failure<byte[]>(DomainErrors.Product.NotFound(request.Id))
+                    : Result.Success(JsonSerializer.SerializeToUtf8Bytes(product));
+            },
+            CacheExpiration.Default,
+            cancellationToken
+        );
+
+        if (productResult.IsFailure)
+            return Result.Failure<Product>(
+                productResult.Error);
+
+        return Result.Success(JsonSerializer.Deserialize<Product>(productResult.Value.Value)!);
     }
 }

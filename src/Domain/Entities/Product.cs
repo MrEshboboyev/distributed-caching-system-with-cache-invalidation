@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Domain.Errors;
 using Domain.Primitives;
 using Domain.Shared;
@@ -6,6 +7,7 @@ namespace Domain.Entities;
 
 public sealed class Product : Entity, IAuditableEntity
 {
+    [JsonConstructor]
     private Product(
         Guid id,
         string name,

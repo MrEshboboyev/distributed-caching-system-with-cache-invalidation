@@ -13,7 +13,7 @@ namespace Infrastructure.Security;
 public sealed class RedisCacheRepository(
     IConnectionMultiplexer redis,
     IOptions<RedisSettings> settings
-) : ICacheRepository, IDisposable
+) : ICacheRepository
 {
     private readonly IDatabase _redisDb = redis.GetDatabase();
     private readonly string _invalidationChannel = settings.Value.InvalidationChannel;
@@ -57,6 +57,4 @@ public sealed class RedisCacheRepository(
         await _redisDb.PublishAsync(_invalidationChannel, key.Value);
         return Result.Success();
     }
-
-    public void Dispose() => redis.Dispose();
 }

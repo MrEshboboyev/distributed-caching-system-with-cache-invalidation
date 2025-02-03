@@ -2,20 +2,21 @@ using Application.Products.Commands.CreateProduct;
 using Application.Products.Queries.GetProduct;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Presentation.Abstractions;
 
 namespace Presentation.Controllers;
 
 [ApiController]
 [Route("api/products")]
-public sealed class ProductsController(ISender sender) : ControllerBase
+public sealed class ProductsController(ISender sender) : ApiController(sender)
 {
     [HttpPost]
     public async Task<IActionResult> CreateProduct(
         CreateProductCommand request,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(request, cancellationToken);
-        return result.IsFailure ? BadRequest(result.Error) : Ok(result.Value);
+        var result = await Sender.Send(request, cancellationToken);
+        return result.IsSuccess ? Ok(result) : BadRequest(request);
     }
 
     [HttpGet("{id:guid}")]
@@ -23,7 +24,7 @@ public sealed class ProductsController(ISender sender) : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetProductQuery(id), cancellationToken);
-        return result.IsFailure ? NotFound(result.Error) : Ok(result.Value);
+        var result = await Sender.Send(new GetProductQuery(id), cancellationToken);        
+        return result.IsSuccess ? Ok(result) : NotFound();
     }
 }
