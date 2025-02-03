@@ -8,23 +8,20 @@ public static class DomainErrors
     
     #region Entities
     
-    public static class User
+    public static class Product
     {
-        public static readonly Error EmailAlreadyInUse = new(
-            "User.EmailAlreadyInUse",
-            "The specified email is already in use");
+        public static readonly Error InvalidName = new(
+            "Product.InvalidName", "Product name is invalid.");
 
+        public static readonly Error InvalidPrice = new(
+            "Product.InvalidPrice", "Product price must be greater than zero.");
+
+        public static readonly Error InvalidStockQuantity = new(
+            "Product.InvalidStockQuantity", "Stock quantity cannot be negative.");
+        
         public static readonly Func<Guid, Error> NotFound = id => new Error(
-            "User.NotFound",
-            $"The user with the identifier {id} was not found.");
-
-        public static readonly Error NotExist = new(
-            "Users.NotExist",
-            $"There is no users");
-
-        public static readonly Error InvalidCredentials = new(
-            "User.InvalidCredentials",
-            "The provided credentials are invalid");
+            "Product.NotFound",
+            $"The Product with the identifier {id} was not found.");
     }
     
     public static class Cache

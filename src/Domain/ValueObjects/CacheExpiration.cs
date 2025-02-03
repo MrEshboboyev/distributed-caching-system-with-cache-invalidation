@@ -21,6 +21,10 @@ public sealed class CacheExpiration : ValueObject
     public TimeSpan AbsoluteExpiration { get; }
     public TimeSpan? SlidingExpiration { get; }
 
+    // Add a default expiration (e.g., 1 hour)
+    public static CacheExpiration Default => 
+        new CacheExpiration(TimeSpan.FromHours(1), null);
+
     #endregion
 
     #region Factory Methods

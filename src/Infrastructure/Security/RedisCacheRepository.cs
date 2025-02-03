@@ -27,6 +27,7 @@ internal sealed class RedisCacheRepository(
                 DomainErrors.Cache.CacheMiss);
 
         return CachedItem.Create(
+            Guid.NewGuid(),
             key.Value,
             JsonSerializer.Deserialize<byte[]>(redisValue!)!,
             CacheExpiration.Default // Replace with actual expiration from Redis
