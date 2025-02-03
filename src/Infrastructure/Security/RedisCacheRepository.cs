@@ -6,16 +6,17 @@ using System.Text.Json;
 using Domain.Errors;
 using Domain.Shared;
 using Infrastructure.Settings;
+using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Security;
 
-internal sealed class RedisCacheRepository(
+public sealed class RedisCacheRepository(
     IConnectionMultiplexer redis,
-    RedisSettings settings
+    IOptions<RedisSettings> settings
 ) : ICacheRepository, IDisposable
 {
     private readonly IDatabase _redisDb = redis.GetDatabase();
-    private readonly string _invalidationChannel = settings.InvalidationChannel;
+    private readonly string _invalidationChannel = settings.Value.InvalidationChannel;
 
     public async Task<Result<CachedItem>> GetAsync(
         CacheKey key, 

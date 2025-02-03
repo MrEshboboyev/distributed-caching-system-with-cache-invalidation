@@ -6,7 +6,7 @@ using Domain.ValueObjects;
 
 namespace Infrastructure.Security;
 
-internal sealed class CacheStrategy(
+public sealed class CacheStrategy(
     ICacheRepository cacheRepository
 ) : ICacheStrategy
 {
