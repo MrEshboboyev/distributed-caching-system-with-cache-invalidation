@@ -22,4 +22,14 @@ internal sealed class ProductRepository(
     {
         await dbContext.Set<Product>().AddAsync(product, cancellationToken);
     }
+
+    public async Task<List<Product>> GetTopProductsAsync(
+        int count, 
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Set<Product>()
+            .OrderByDescending(p => p.CreatedOnUtc) // Most recently created first
+            .Take(count)
+            .ToListAsync(cancellationToken);
+    }
 }

@@ -40,23 +40,15 @@ public sealed class CachedItem : AggregateRoot, IAuditableEntity
         byte[] value,
         CacheExpiration cacheExpiration)
     {
-        #region Create new User
-
         var cachedItem = new CachedItem(
             id,
             key,
             value,
             cacheExpiration);
 
-        #endregion
-
-        #region Domain Events
-
         cachedItem.RaiseDomainEvent(new CachedItemCreatedDomainEvent(
             Guid.NewGuid(),
             cachedItem.Id));
-
-        #endregion
 
         return cachedItem;
     }

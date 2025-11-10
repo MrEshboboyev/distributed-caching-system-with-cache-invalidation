@@ -45,10 +45,14 @@ public static class DomainErrors
         public static readonly Error InvalidationFailed = new(
             "Cache.InvalidationFailed", 
             "Failed to invalidate cache item.");
+
+        public static readonly Func<string, Error> SubscriptionFailed = channel => new Error(
+            "Cache.SubscriptionFailed",
+            $"Failed to subscribe to cache invalidation channel: {channel}.");
     }
 
     #endregion
-    
+
     #region Value Objects
 
     public static class RateLimit

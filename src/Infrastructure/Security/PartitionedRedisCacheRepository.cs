@@ -6,43 +6,39 @@ using Domain.ValueObjects;
 using Infrastructure.Services;
 using Infrastructure.Settings;
 using Microsoft.Extensions.Options;
-using StackExchange.Redis;
 using System.Text.Json;
 
 namespace Infrastructure.Security;
 
-public sealed class RedisCacheRepository(
-    IConnectionMultiplexer redis,
-    IOptions<RedisSettings> settings,
+public sealed class PartitionedRedisCacheRepository(
+    ICachePartitioningService partitioningService,
     ICompressionService compressionService,
-    ISerializationService serializationService
+    IOptions<RedisSettings> settings
 ) : ICacheRepository
 {
-    private readonly IDatabase _redisDb = redis.GetDatabase();
     private readonly string _invalidationChannel = settings.Value.InvalidationChannel;
-    private readonly ICompressionService _compressionService = compressionService;
-    private readonly ISerializationService _serializationService = serializationService;
 
     public async Task<Result<CachedItem>> GetAsync(
-        CacheKey key, 
+        CacheKey key,
         CancellationToken cancellationToken)
     {
-        var redisValue = await _redisDb.StringGetAsync(key.Value);
+        var db = partitioningService.GetPartitionDatabase(key.Value);
+        var redisValue = await db.StringGetAsync(key.Value);
+        
         if (redisValue.IsNullOrEmpty)
-            return Result.Failure<CachedItem>(
-                DomainErrors.Cache.CacheMiss);
+            return Result.Failure<CachedItem>(DomainErrors.Cache.CacheMiss);
 
         try
         {
             // Decompress the data if it was compressed
             var compressedData = JsonSerializer.Deserialize<byte[]>(redisValue!);
-            var decompressedData = _compressionService.Decompress(compressedData!);
+            var decompressedData = compressionService.Decompress(compressedData!);
             
             return CachedItem.Create(
                 Guid.NewGuid(),
                 key.Value,
                 decompressedData,
-                CacheExpiration.Default // Replace with actual expiration from Redis
+                CacheExpiration.Default
             );
         }
         catch (Exception)
@@ -52,22 +48,24 @@ public sealed class RedisCacheRepository(
                 Guid.NewGuid(),
                 key.Value,
                 JsonSerializer.Deserialize<byte[]>(redisValue!)!,
-                CacheExpiration.Default // Replace with actual expiration from Redis
+                CacheExpiration.Default
             );
         }
     }
 
     public async Task<Result> SetAsync(
-        CachedItem item, 
+        CachedItem item,
         CancellationToken cancellationToken)
     {
+        var db = partitioningService.GetPartitionDatabase(item.Key);
+        
         try
         {
             // Compress the data before storing
-            var compressedData = _compressionService.Compress(item.Value);
+            var compressedData = compressionService.Compress(item.Value);
             var serializedValue = JsonSerializer.Serialize(compressedData);
             
-            await _redisDb.StringSetAsync(
+            await db.StringSetAsync(
                 item.Key,
                 serializedValue,
                 item.Expiration.AbsoluteExpiration
@@ -78,7 +76,7 @@ public sealed class RedisCacheRepository(
         {
             // Fallback to original serialization if compression fails
             var serializedValue = JsonSerializer.Serialize(item.Value);
-            await _redisDb.StringSetAsync(
+            await db.StringSetAsync(
                 item.Key,
                 serializedValue,
                 item.Expiration.AbsoluteExpiration
@@ -88,17 +86,18 @@ public sealed class RedisCacheRepository(
     }
 
     public async Task<Result> InvalidateAsync(
-        CacheKey key, 
+        CacheKey key,
         CancellationToken cancellationToken)
     {
         try
         {
-            await _redisDb.KeyDeleteAsync(key.Value);
+            var db = partitioningService.GetPartitionDatabase(key.Value);
+            await db.KeyDeleteAsync(key.Value);
             return Result.Success();
         }
         catch (Exception)
         {
-            return Result.Failure(Domain.Errors.DomainErrors.Cache.InvalidationFailed);
+            return Result.Failure(DomainErrors.Cache.InvalidationFailed);
         }
     }
 }
