@@ -48,6 +48,7 @@ public sealed class RedisCacheRepository(
         return Result.Success();
     }
 
+    [Obsolete]
     public async Task<Result> InvalidateAsync(
         CacheKey key, 
         CancellationToken cancellationToken)
