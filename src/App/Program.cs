@@ -1,5 +1,7 @@
 using App.Configurations;
+using App.Extensions;
 using App.Middlewares;
+using Persistence;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +18,7 @@ builder.Services
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
 
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -23,6 +26,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.MigrateDatabase<ApplicationDbContext>();
 
 app.UseHttpsRedirection();
 
@@ -42,3 +47,5 @@ app.MapControllers();
 app.UseRateLimiter();
 
 app.Run();
+
+// auto apply migrations to database function
